@@ -8,6 +8,7 @@ from functools import partial
 tf.enable_eager_execution()
 
 import config as cg
+batch_size = cg.batch_size
 
 def train_generator(path):
   """this could achieve random by dataset.shuffle(10).batch(2).repeat(3)."""
@@ -30,13 +31,13 @@ def train_generator_test(path):
   random.shuffle(data)
   lines = []
   for idx, line in enumerate(data):    
-    if len(lines) < 2:
+    if len(lines) < batch_size:
       lines.append(line)
-      if len(lines) == 2:
+      if len(lines) == batch_size:
         features = {'input': lines}
         yield features
         lines = []
-      if idx > (len(data) // 2) * 2 - 1 and len(data) % 2 != 0:
+      if idx > (len(data) // batch_size) * batch_size - 1 and len(data) % batch_size != 0:
         lines.extend(random.sample(data, 2 - len(lines)))
         features = {'input': lines}
         yield features
