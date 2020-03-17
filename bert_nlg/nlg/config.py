@@ -1,5 +1,10 @@
 # coding:utf-8
 
+from pathlib import Path
+MAIN_PATH = Path(__file__).absolute().parent.parent.parent
+
+DATA_PATH = MAIN_PATH / 'data/test_data.txt'
+
 class BertEncoderConfig(object):
   hidden_dropout_prob = 0.1
   attention_probs_dropout_prob = 0.1
