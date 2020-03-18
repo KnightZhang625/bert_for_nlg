@@ -7,7 +7,7 @@ import functools
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 
 from log import log_info as _info
 from log import log_error as _error
@@ -94,6 +94,24 @@ def process_data():
 	
 	_info('Coverted questions and answers have been saved into `processed_data` directory.')
 
+def make_mask(que_batch, reverse=False):
+	mask = []
+	for que in que_batch:
+		mask_per_que = []
+		for idx, v in enumerate(que):
+			if v != vocab_idx['<padding>']:
+				prev = idx + 1
+				rear = len(que) - prev
+				if not reverse:
+					mask_per_vocab = [1 for _ in range(prev)] + [0 for _ in range(rear)]
+				else:
+					mask_per_vocab = [0 for _ in range(prev)] + [1 for _ in range(rear)]
+			else:
+				mask_per_vocab = [0 for _ in range(len(que))]
+			mask_per_que.append(mask_per_vocab)
+		mask.append(mask_per_que)
+	return mask
+
 def padding_data(que_batch, ans_batch):
 	"""padding each data in the batch with same length."""
 	max_que_length = max(list(map(len, que_batch)))
@@ -107,7 +125,9 @@ def padding_data(que_batch, ans_batch):
 	que_batch = list(map(padding_que, que_batch))
 	ans_batch = list(map(padding_ans, ans_batch))
 
-	return que_batch, ans_batch
+	mask = make_mask(que_batch)
+	
+	return que_batch, ans_batch, mask
 
 @check_data(need_exit=True)
 def train_generator():
@@ -137,8 +157,8 @@ def train_generator():
 
 			# check whether a batch is full
 			if len(que_batch) == batch_size:
-				que_batch_padded, ans_batch_padded = padding_data(que_batch, ans_batch)
-				features = {'input_x': que_batch_padded}
+				que_batch_padded, ans_batch_padded, mask = padding_data(que_batch, ans_batch)
+				features = {'input_x': que_batch_padded, 'input_mask': mask}
 				yield(features, ans_batch_padded)
 				que_batch = []
 				ans_batch = []
@@ -156,14 +176,14 @@ def train_generator():
 
 					assert len(que_batch) == len(ans_batch) == batch_size
 
-					que_batch_padded, ans_batch_padded = padding_data(que_batch, ans_batch)
-					features = {'input_x': que_batch_padded}
+					que_batch_padded, ans_batch_padded, mask = padding_data(que_batch, ans_batch)
+					features = {'input_x': que_batch_padded, 'input_mask': mask}
 					yield(features, ans_batch_padded)
 					break
 		
 def train_input_fn():
-	output_types = {'input_x': tf.int32}
-	output_shapes = {'input_x': [None, None]}
+	output_types = {'input_x': tf.int32, 'input_mask': tf.int32}
+	output_shapes = {'input_x': [None, None], 'input_mask': [None, None, None]}
 
 	dataset = tf.data.Dataset.from_generator(
 		train_generator,
@@ -175,12 +195,12 @@ def train_input_fn():
 	return dataset
 
 if __name__ == '__main__':
-	for data in train_input_fn():
-	  print(data)
-	  input()
+	# for data in train_input_fn():
+	#   print(data)
+	#   input()
 	
 	# for data in train_generator():
 	# 	print(len(data))
 	# 	input()
 		
-	# process_data()
+	process_data()

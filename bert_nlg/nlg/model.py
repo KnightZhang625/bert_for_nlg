@@ -64,7 +64,7 @@ class BertEncoder(object):
           input_ids=input_ids,
           vocab_size=config.vocab_size,
           embedding_size=config.embedding_size,
-          initializer_range=config.intializer_range,
+          initializer_range=config.initializer_range,
           word_embedding_name='word_embeddings',
           use_one_hot_embeddings=use_one_hot_embeddings)
     
@@ -79,9 +79,10 @@ class BertEncoder(object):
 
       with tf.variable_scope('encoder'):
         # [batch_size, seq_length] -> [batch_size, seq_length, seq_length]
-        attention_mask = ft.create_attention_mask_from_input_mask(
-          input_ids, input_mask)
-        
+        # attention_mask = ft.create_attention_mask_from_input_mask(
+        #   input_ids, input_mask)
+        attention_mask = tf.cast(input_mask, tf.float32)
+
         all_encoder_layers = lego.transformer_model(input_tensor=positional_embedding_output,
                                                     attention_mask=attention_mask,
                                                     hidden_size=config.hidden_size,

@@ -1,6 +1,7 @@
 # coding:utf-8
 
 import six
+import numpy as np
 import tensorflow as tf
 
 def get_shape_list(tensor, expected_rank=None, name=None):

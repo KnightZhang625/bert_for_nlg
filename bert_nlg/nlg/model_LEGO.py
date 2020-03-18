@@ -313,6 +313,6 @@ def attention_layer(input_tensor,
   # [b, s, n, a]
   context_layer = tf.transpose(context_layer, [0, 2, 1, 3])
   # [b, s, n * a]
-  context_layer = tf.reshape(context_layer, [batch_size, seq_length, -1])
+  context_layer = tf.reshape(context_layer, [batch_size, seq_length, num_attention_heads * size_per_head])
 
   return context_layer
