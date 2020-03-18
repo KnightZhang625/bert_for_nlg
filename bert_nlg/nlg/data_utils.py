@@ -59,7 +59,8 @@ def check_data(need_exit):
 				if len(files) > 0:
 					_error('The data exists.')
 					raise FileExistsError
-			func()
+			for data in func():
+				yield data
 		return de_func_inner
 	return de_func
 			
@@ -108,7 +109,7 @@ def padding_data(que_batch, ans_batch):
 
 	return que_batch, ans_batch
 
-# @check_data(need_exit=True)
+@check_data(need_exit=True)
 def train_generator():
 	"""this could achieve padding among each batch."""
 	# load the data
