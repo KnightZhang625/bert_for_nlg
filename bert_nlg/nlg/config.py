@@ -3,9 +3,16 @@
 from pathlib import Path
 MAIN_PATH = Path(__file__).absolute().parent.parent.parent
 
+# data
 DATA_PATH = MAIN_PATH / 'data/test_data.txt'
-batch_size = 2
+VOCAB_IDX_PATH = MAIN_PATH / 'data/vocab_idx.bin'
+IDX_VOCAB_PATH = MAIN_PATH / 'data/idx_vocab.bin'
 
+# global
+batch_size = 3
+train_steps = 3
+
+# Bert
 class BertEncoderConfig(object):
   hidden_dropout_prob = 0.1
   attention_probs_dropout_prob = 0.1
@@ -20,6 +27,3 @@ class BertEncoderConfig(object):
 
   initializer_range = 0.02
   hidden_act = 'gelu'
-
-if __name__ == '__main__':
-  print(BertEncoderConfig.hidden_dropout_prob)
