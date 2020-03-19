@@ -8,7 +8,7 @@ import functools
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-# tf.enable_eager_execution()
+tf.enable_eager_execution()
 
 from log import log_info as _info
 from log import log_error as _error
@@ -190,34 +190,34 @@ def train_generator():
 				seq_length_decoder_input_data = []
 
 			if idx > (batch_num * batch_size - 1) and len(questions) % batch_size != 0:
-					que_batch = copy.deepcopy(questions[idx:])
-					input_ans_batch = copy.deepcopy(answers[idx:])
-					output_ans_batch = copy.deepcopy(answers[idx:])
-					for _ in range(batch_num - len(que_batch)):
-						aug_que = random.choice(questions)
-						aug_que_idx = questions.index(aug_que)						
-						que_batch.append(aug_que)
+				que_batch = copy.deepcopy(questions[idx:])
+				input_ans_batch = copy.deepcopy(answers[idx:])
+				output_ans_batch = copy.deepcopy(answers[idx:])
+				for _ in range(batch_size - len(que_batch)):
+					aug_que = random.choice(questions)
+					aug_que_idx = questions.index(aug_que)						
+					que_batch.append(aug_que)
 
-						inp_ans = copy.deepcopy(answers[aug_que_idx])
-						out_ans = copy.deepcopy(answers[aug_que_idx])
-						inp_ans.insert(0, sos_id)
-						out_ans.append(eos_id)
-						input_ans_batch.append(inp_ans)
-						output_ans_batch.append(out_ans)
-					
-					for idx, _ in enumerate(input_ans_batch):
-						input_ans_batch[idx].insert(0, sos_id)
-					for idx, _ in enumerate(output_ans_batch):
-						output_ans_batch[idx].append(eos_id)
-					seq_length_decoder_input_data = [len(ans) for ans in input_ans_batch]
+					inp_ans = copy.deepcopy(answers[aug_que_idx])
+					out_ans = copy.deepcopy(answers[aug_que_idx])
+					inp_ans.insert(0, sos_id)
+					out_ans.append(eos_id)
+					input_ans_batch.append(inp_ans)
+					output_ans_batch.append(out_ans)
+				
+				for idx, _ in enumerate(input_ans_batch):
+					input_ans_batch[idx].insert(0, sos_id)
+				for idx, _ in enumerate(output_ans_batch):
+					output_ans_batch[idx].append(eos_id)
+				seq_length_decoder_input_data = [len(ans) for ans in input_ans_batch]
 
-					assert len(que_batch) == len(input_ans_batch) == len(output_ans_batch) == batch_size
+				assert len(que_batch) == len(input_ans_batch) == len(output_ans_batch) == batch_size
 
-					que_batch_padded, inp_ans_batch_padded, out_ans_batch_padded, mask = padding_data(que_batch, input_ans_batch, output_ans_batch)
-					features = {'input_x': que_batch_padded, 'input_mask': mask, 'input_y': inp_ans_batch_padded, 'seq_length': seq_length_decoder_input_data}
-					yield(features, out_ans_batch_padded)
-					break
-		
+				que_batch_padded, inp_ans_batch_padded, out_ans_batch_padded, mask = padding_data(que_batch, input_ans_batch, output_ans_batch)
+				features = {'input_x': que_batch_padded, 'input_mask': mask, 'input_y': inp_ans_batch_padded, 'seq_length': seq_length_decoder_input_data}
+				yield(features, out_ans_batch_padded)
+				break
+	
 def train_input_fn():
 	output_types = {'input_x': tf.int32, 'input_mask': tf.int32, 'input_y': tf.int32, 'seq_length': tf.int32}
 	output_shapes = {'input_x': [None, None], 'input_mask': [None, None, None], 'input_y': [None, None], 'seq_length': [None]}
@@ -241,12 +241,12 @@ def server_input_fn():
 	return tf.estimator.export.ServingInputReceiver(features, receive_tensors)
 
 if __name__ == '__main__':
-	# for data in train_input_fn():
-	#   print(data)
-	#   input()
+	for data in train_input_fn():
+	  print(data)
+	  # input()
 	
 	# for data in train_generator():
 	# 	print(data)
 	# 	input()
 	
-	make_process_data()
+	# make_process_data()
