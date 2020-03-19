@@ -5,7 +5,7 @@
 - tensorflow == 1.1x 
 
 ## Run example  
-**Please confit the config.py**    
+**Please config the config.py first.**    
 >>1.make data  
 ```
 specify you data path in the config.py, then execute python data_utils.py
