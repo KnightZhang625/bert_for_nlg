@@ -8,7 +8,7 @@ import functools
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 
 from log import log_info as _info
 from log import log_error as _error
