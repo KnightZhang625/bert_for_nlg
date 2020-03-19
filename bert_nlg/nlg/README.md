@@ -6,6 +6,8 @@
 
 ## Run example  
 >> Please confit the config.py  
+>>1.make data  
+specify you data path in the config.py, then execute ```python data_utils.py```  
 >>1.train  
 ```shell
 python train.py train  
