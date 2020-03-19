@@ -130,5 +130,5 @@ def package_model(ckpt_path, pb_path):
   estimator.export_saved_model(pb_path, server_input_fn)
 
 if __name__ == '__main__':
-  # main()
-  package_model('models/', 'pb_models/')
+  main()
+  # package_model('models/', 'pb_models/')

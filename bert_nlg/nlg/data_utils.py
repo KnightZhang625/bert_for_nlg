@@ -62,12 +62,20 @@ def check_data(need_exit):
 				if len(files) > 0:
 					_error('The data exists.')
 					raise FileExistsError
-			for data in func():
-				yield data
+			if func.__name__ == 'process_data':
+				func()
+			else:
+				for data in func():
+					yield data
 		return de_func_inner
 	return de_func
-			
-# @check_data(need_exit=False)
+
+def make_process_data():
+	"""due to `yield` in decorator, use another function to execute `process_data()`."""
+	for _ in process_data():
+		pass
+
+@check_data(need_exit=False)
 def process_data():
 	"""covert the string data to idx, and save."""
 	with codecs.open(cg.DATA_PATH, 'r', 'utf-8') as file:
@@ -90,6 +98,7 @@ def process_data():
 	que_idx = [str_to_idx(que) for que in questions]
 	ans_idx = [str_to_idx(ans) for ans in answers]
 
+	Path('processed_data/').mkdir(exist_ok=True)
 	with codecs.open('processed_data/questions.bin', 'wb') as file:
 		pickle.dump(que_idx, file)
 	with codecs.open('processed_data/answers.bin', 'wb') as file:
@@ -236,8 +245,8 @@ if __name__ == '__main__':
 	#   print(data)
 	#   input()
 	
-	for data in train_generator():
-		print(data)
-		input()
-		
-	# process_data()
+	# for data in train_generator():
+	# 	print(data)
+	# 	input()
+	
+	make_process_data()
