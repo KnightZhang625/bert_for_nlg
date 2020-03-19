@@ -11,12 +11,15 @@ IDX_VOCAB_PATH = MAIN_PATH / 'data/idx_vocab.bin'
 # model path
 save_model_path = 'models/'
 keep_checkpoint_max = 1
-save_checkpoints_steps = 3
+save_checkpoints_steps = 10
 
 # global
 batch_size = 3
-train_steps = 3
-print_info_interval = 2
+train_steps = 1000
+print_info_interval = 10
+learning_rate = 1e-2
+lr_limit = 1e-2
+colocate_gradients_with_ops = True
 
 # Bert
 class BertEncoderConfig(object):
@@ -24,12 +27,26 @@ class BertEncoderConfig(object):
   attention_dropout_prob = 0.1
 
   vocab_size = 7819
-  embedding_size = 128
+  embedding_size = 64
   max_positional_embeddings = 30
-  hidden_size = 128
+  hidden_size = 64
   num_hidden_layers = 4
   num_attention_heads = 4
   intermediate_size = 256
 
   initializer_range = 0.02
   hidden_act = 'gelu'
+
+# Decoder
+class DecoderConfig(object):
+  unit_type = 'GRU'
+  num_units = 64
+  forget_bias = True
+  tgt_vocab_size = 7819
+
+  dropout = 0.1
+  initializer_range = 0.02
+  
+  sos_id = 1
+  eos_id = 2
+  max_len_infer = 50

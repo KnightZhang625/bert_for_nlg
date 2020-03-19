@@ -316,3 +316,44 @@ def attention_layer(input_tensor,
   context_layer = tf.reshape(context_layer, [batch_size, seq_length, num_attention_heads * size_per_head])
 
   return context_layer
+
+def create_single_cell_RNN(unit_type,
+                           num_units,
+                           dropout,
+                           residual,
+                           forget_bias):
+  single_cell = None
+  ac = tf.nn.relu
+
+  if unit_type is 'LSTM':
+    single_cell = tf.contrib.rnn.BasicLSTMCell(
+      num_units, forget_bias=forget_bias, activation=ac)
+  elif unit_type is 'GRU':
+    single_cell = tf.contrib.rnn.GRUCell(num_units, activation=ac)
+  else:
+    raise ValueError('Unit Type: {} not support.'.format(unit_type))
+
+  if dropout > 0.0:
+    single_cell = tf.contrib.rnn.DropoutWrapper(
+      cell=single_cell, input_keep_prob=(1.0 - dropout))
+  
+  if residual:
+    single_cell = tf.contrib.rnn.ResidualWrapper(single_cell)
+  
+  return single_cell
+
+def create_cell_list_for_RNN(unit_type,
+                             num_units,
+                             dropout,
+                             forget_bias,
+                             num_layers=1,
+                             num_residual_layers=0):
+  cell_list = []
+
+  for i in range(num_layers):
+    cell = create_single_cell_RNN(unit_type, num_units, dropout,
+                                  residual=(i >= num_layers - num_residual_layers),
+                                  forget_bias=forget_bias)
+    cell_list.append(cell)
+  
+  return cell_list[0] if len(cell_list) == 1 else tf.contrib.rnn.MultiRNNCell(cell_list)

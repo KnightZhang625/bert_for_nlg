@@ -145,3 +145,16 @@ def gelu(x):
   cdf = 0.5 * (1.0 + tf.tanh(
       (np.sqrt(2 / np.pi) * (x + 0.044715 * tf.pow(x, 3)))))
   return x * cdf
+
+def get_ppl(logits):
+  max_time = tf.cast(get_shape_list(logits, expected_rank=3)[1], tf.float32)
+  # [b, s, v]
+  probs = tf.nn.softmax(logits, axis=-1)
+  # [b, s]
+  probs_max = tf.reduce_max(probs, axis=-1)
+  log_prob =  -tf.log(probs_max)
+  # [b]
+  log_prob_seq = tf.reduce_sum(log_prob, axis=-1) / max_time
+  log_prob_mean = tf.reduce_mean(log_prob_seq)
+
+  return log_prob_seq, log_prob_mean

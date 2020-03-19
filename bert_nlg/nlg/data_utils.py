@@ -1,5 +1,6 @@
 # coding:utf-8
 
+import copy
 import codecs
 import pickle
 import random
@@ -7,7 +8,7 @@ import functools
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-# tf.enable_eager_execution()
+tf.enable_eager_execution()
 
 from log import log_info as _info
 from log import log_error as _error
@@ -17,6 +18,8 @@ from log import print_process as _process
 import config as cg
 batch_size = cg.batch_size
 train_steps = cg.train_steps
+sos_id = cg.DecoderConfig.sos_id
+eos_id = cg.DecoderConfig.eos_id
 
 # # abandon generator
 # def train_generator(path):
@@ -112,10 +115,10 @@ def make_mask(que_batch, reverse=False):
 		mask.append(mask_per_que)
 	return mask
 
-def padding_data(que_batch, ans_batch):
+def padding_data(que_batch, input_ans_batch, output_ans_batch):
 	"""padding each data in the batch with same length."""
 	max_que_length = max(list(map(len, que_batch)))
-	max_ans_length = max(list(map(len, ans_batch)))
+	max_ans_length = max(list(map(len, input_ans_batch)))
 
 	padding = lambda line, max_length : line + [vocab_idx['<padding>'] for _ in range(max_length - len(line))]
 
@@ -123,11 +126,12 @@ def padding_data(que_batch, ans_batch):
 	padding_ans = functools.partial(padding, max_length=max_ans_length)
 
 	que_batch = list(map(padding_que, que_batch))
-	ans_batch = list(map(padding_ans, ans_batch))
+	input_ans_batch = list(map(padding_ans, input_ans_batch))
+	output_ans_batch = list(map(padding_ans, output_ans_batch))
 
 	mask = make_mask(que_batch)
 	
-	return que_batch, ans_batch, mask
+	return que_batch, input_ans_batch, output_ans_batch, mask
 
 @check_data(need_exit=True)
 def train_generator():
@@ -148,42 +152,66 @@ def train_generator():
 	answers = list(answers)
 
 	que_batch = []
-	ans_batch = []
+	input_ans_batch = []
+	output_ans_batch = []
+	seq_length_decoder_input_data = []
 	batch_num = len(questions) // batch_size
 	for idx, que in enumerate(questions):
 		if len(que_batch) < batch_size:
+			# que
 			que_batch.append(que)
-			ans_batch.append(answers[idx])
+
+			# ans
+			inp_ans = copy.deepcopy(answers[idx])
+			out_ans = copy.deepcopy(answers[idx])
+			inp_ans.insert(0, sos_id)
+			out_ans.append(eos_id)
+			input_ans_batch.append(inp_ans)
+			output_ans_batch.append(out_ans)
+			seq_length_decoder_input_data.append(len(inp_ans))
 
 			# check whether a batch is full
 			if len(que_batch) == batch_size:
-				que_batch_padded, ans_batch_padded, mask = padding_data(que_batch, ans_batch)
-				features = {'input_x': que_batch_padded, 'input_mask': mask}
-				yield(features, ans_batch_padded)
+				que_batch_padded, inp_ans_batch_padded, out_ans_batch_padded, mask = padding_data(que_batch, input_ans_batch, output_ans_batch)
+				features = {'input_x': que_batch_padded, 'input_mask': mask, 'input_y': inp_ans_batch_padded, 'seq_length': seq_length_decoder_input_data}
+				yield(features, out_ans_batch_padded)
 				que_batch = []
-				ans_batch = []
+				input_ans_batch = []
+				output_ans_batch = []
+				seq_length_decoder_input_data = []
 
 			if idx > (batch_num * batch_size - 1) and len(questions) % batch_size != 0:
-					que_batch = questions[idx:]
-					ans_batch = answers[idx:]
+					que_batch = copy.deepcopy(questions[idx:])
+					input_ans_batch = copy.deepcopy(answers[idx:])
+					output_ans_batch = copy.deepcopy(answers[idx:])
 					for _ in range(batch_num - len(que_batch)):
 						aug_que = random.choice(questions)
-						aug_que_idx = questions.index(aug_que)
-						aug_ans = answers[aug_que_idx]
-						
+						aug_que_idx = questions.index(aug_que)						
 						que_batch.append(aug_que)
-						ans_batch.append(aug_ans)
 
-					assert len(que_batch) == len(ans_batch) == batch_size
+						inp_ans = copy.deepcopy(answers[aug_que_idx])
+						out_ans = copy.deepcopy(answers[aug_que_idx])
+						inp_ans.insert(0, sos_id)
+						out_ans.append(eos_id)
+						input_ans_batch.append(inp_ans)
+						output_ans_batch.append(out_ans)
+					
+					for idx, _ in enumerate(input_ans_batch):
+						input_ans_batch[idx].insert(0, sos_id)
+					for idx, _ in enumerate(output_ans_batch):
+						output_ans_batch[idx].append(eos_id)
+					seq_length_decoder_input_data = [len(ans) for ans in input_ans_batch]
 
-					que_batch_padded, ans_batch_padded, mask = padding_data(que_batch, ans_batch)
-					features = {'input_x': que_batch_padded, 'input_mask': mask}
-					yield(features, ans_batch_padded)
+					assert len(que_batch) == len(input_ans_batch) == len(output_ans_batch) == batch_size
+
+					que_batch_padded, inp_ans_batch_padded, out_ans_batch_padded, mask = padding_data(que_batch, input_ans_batch, output_ans_batch)
+					features = {'input_x': que_batch_padded, 'input_mask': mask, 'input_y': inp_ans_batch_padded, 'seq_length': seq_length_decoder_input_data}
+					yield(features, out_ans_batch_padded)
 					break
 		
 def train_input_fn():
-	output_types = {'input_x': tf.int32, 'input_mask': tf.int32}
-	output_shapes = {'input_x': [None, None], 'input_mask': [None, None, None]}
+	output_types = {'input_x': tf.int32, 'input_mask': tf.int32, 'input_y': tf.int32, 'seq_length': tf.int32}
+	output_shapes = {'input_x': [None, None], 'input_mask': [None, None, None], 'input_y': [None, None], 'seq_length': [None]}
 
 	dataset = tf.data.Dataset.from_generator(
 		train_generator,
@@ -195,12 +223,12 @@ def train_input_fn():
 	return dataset
 
 if __name__ == '__main__':
-	# for data in train_input_fn():
-	#   print(data)
-	#   input()
+	for data in train_input_fn():
+	  print(data)
+	  input()
 	
 	# for data in train_generator():
-	# 	print(len(data))
+	# 	print(data)
 	# 	input()
 		
-	process_data()
+	# process_data()

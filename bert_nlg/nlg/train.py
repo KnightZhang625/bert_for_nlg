@@ -6,7 +6,8 @@ import tensorflow as tf
 from pathlib import Path
 
 import config as cg
-from model import BertEncoder
+import function_toolkit as ft
+from model import BertEncoder, Decoder
 from data_utils import train_input_fn
 
 from log import log_info as _info
@@ -34,18 +35,75 @@ def model_fn_builder():
     for name in sorted(features.keys()):
       tf.logging.info(' name = {}, shape = {}'.format(name, features[name].shape))
 
+    is_training = (mode == tf.estimator.ModeKeys.TRAIN)
+
+    # get data
     input_x = features['input_x']
     input_mask = features['input_mask']
+    if is_training:
+      input_y = features['input_y']
+      seq_length = features['seq_length']
+    else:
+      input_y = None
+      seq_length = None
 
-    is_training = (mode == tf.estimator.ModeKeys.TRAIN)
+    # build encoder
     model = BertEncoder(
       config=cg.BertEncoderConfig,
       is_training=is_training,
       input_ids=input_x,
       input_mask=input_mask)
-    encoder_output = model.get_sequence_output() 
-    _info(encoder_output)
+    embedding_table = model.get_embedding_table()
+    encoder_output = tf.reduce_sum(model.get_sequence_output(), axis=1)
 
+    # build decoder
+    decoder_model = Decoder(
+      config=cg.DecoderConfig,
+      is_training=is_training,
+      encoder_state=encoder_output,
+      embedding_table=embedding_table,
+      decoder_intput_data=input_y,
+      seq_length_decoder_input_data=seq_length)
+    logits, sample_id, ppl_seq, ppl = decoder_model.get_decoder_output()
+
+    if mode == tf.estimator.ModeKeys.PREDICT:
+      predictions = {'sample_id': sample_id, 'ppls': ppl_seq}
+      output_spec = tf.estimator.EstimatorSpec(mode, predictions=predictions)
+    else:
+      if mode == tf.estimator.ModeKeys.TRAIN:
+        max_time = ft.get_shape_list(labels, expected_rank=2)[1]
+        target_weights = tf.sequence_mask(seq_length, max_time, dtype=logits.dtype)
+        batch_size = tf.cast(ft.get_shape_list(labels, expected_rank=2)[0], tf.float32)
+
+        loss = tf.reduce_sum(
+          tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits) * target_weights) / batch_size
+
+        learning_rate = tf.train.polynomial_decay(cg.learning_rate,
+                                          tf.train.get_or_create_global_step(),
+                                          cg.train_steps / 100,
+                                          end_learning_rate=1e-4,
+                                          power=1.0,
+                                          cycle=False)
+
+        lr = tf.maximum(tf.constant(cg.lr_limit), learning_rate)
+        optimizer = tf.train.AdamOptimizer(lr, name='optimizer')
+        tvars = tf.trainable_variables()
+        gradients = tf.gradients(loss, tvars, colocate_gradients_with_ops=cg.colocate_gradients_with_ops)
+        clipped_gradients, _ = tf.clip_by_global_norm(gradients, 5.0)
+        train_op = optimizer.apply_gradients(zip(clipped_gradients, tvars), global_step=tf.train.get_global_step())
+
+
+        # this is excellent, because it could display the result each step, i.e., each step equals to batch_size.
+        # the output_spec, display the result every save checkpoints step.
+        logging_hook = tf.train.LoggingTensorHook({'loss' : loss, 'ppl': ppl, 'lr': lr}, every_n_iter=cg.print_info_interval)
+
+        output_spec = tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op, training_hooks=[logging_hook])
+      elif mode == tf.estimator.ModeKeys.EVAL:
+        # TODO
+        raise NotImplementedError
+    
+    return output_spec
+  
   return model_fn
 
 def main():
