@@ -2,6 +2,7 @@
 
 import sys
 import logging
+import argparse
 import tensorflow as tf
 from pathlib import Path
 
@@ -130,5 +131,12 @@ def package_model(ckpt_path, pb_path):
   estimator.export_saved_model(pb_path, server_input_fn)
 
 if __name__ == '__main__':
-  main()
-  # package_model('models/', 'pb_models/')
+  parser = argparse.ArgumentParser(description=_info('python train.py [train | package]', head='USAGE:'))
+  parser.add_argument('mode')
+  
+  args = parser.parse_args()
+  mode = args.mode
+  if mode == 'train':
+    main()
+  elif mode == 'pacakge':
+    pakage_model('models/', 'pb_models/')
