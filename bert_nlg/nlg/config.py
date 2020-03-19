@@ -27,12 +27,12 @@ class BertEncoderConfig(object):
   attention_dropout_prob = 0.1
 
   vocab_size = 7819
-  embedding_size = 64
+  embedding_size = 32
   max_positional_embeddings = 30
-  hidden_size = 64
+  hidden_size = 32
   num_hidden_layers = 4
   num_attention_heads = 4
-  intermediate_size = 256
+  intermediate_size = 64
 
   initializer_range = 0.02
   hidden_act = 'gelu'
@@ -40,7 +40,7 @@ class BertEncoderConfig(object):
 # Decoder
 class DecoderConfig(object):
   unit_type = 'GRU'
-  num_units = 64
+  num_units = 32
   forget_bias = True
   tgt_vocab_size = 7819
 

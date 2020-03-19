@@ -8,7 +8,7 @@ from pathlib import Path
 import config as cg
 import function_toolkit as ft
 from model import BertEncoder, Decoder
-from data_utils import train_input_fn
+from data_utils import train_input_fn, server_input_fn
 
 from log import log_info as _info
 from log import log_error as _error
@@ -124,5 +124,11 @@ def main():
   estimator = tf.estimator.Estimator(model_fn, config=run_config)
   estimator.train(train_input_fn)
 
+def package_model(ckpt_path, pb_path):
+  model_fn = model_fn_builder()
+  estimator = tf.estimator.Estimator(model_fn, ckpt_path)
+  estimator.export_saved_model(pb_path, server_input_fn)
+
 if __name__ == '__main__':
-  main()
+  # main()
+  package_model('models/', 'pb_models/')

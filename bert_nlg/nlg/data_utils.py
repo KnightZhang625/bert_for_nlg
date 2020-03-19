@@ -8,7 +8,7 @@ import functools
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 
 from log import log_info as _info
 from log import log_error as _error
@@ -67,7 +67,7 @@ def check_data(need_exit):
 		return de_func_inner
 	return de_func
 			
-@check_data(need_exit=False)
+# @check_data(need_exit=False)
 def process_data():
 	"""covert the string data to idx, and save."""
 	with codecs.open(cg.DATA_PATH, 'r', 'utf-8') as file:
@@ -222,13 +222,22 @@ def train_input_fn():
 
 	return dataset
 
+def server_input_fn():
+	input_x = tf.placeholder(tf.int32, shape=[None, None], name='input_x')
+	input_mask = tf.placeholder(tf.int32, shape=[None, None, None], name='input_mask')
+
+	receive_tensors = {'input_x': input_x, 'input_mask': input_mask}
+	features = {'input_x': input_x, 'input_mask': input_mask}
+
+	return tf.estimator.export.ServingInputReceiver(features, receive_tensors)
+
 if __name__ == '__main__':
-	for data in train_input_fn():
-	  print(data)
-	  input()
+	# for data in train_input_fn():
+	#   print(data)
+	#   input()
 	
-	# for data in train_generator():
-	# 	print(data)
-	# 	input()
+	for data in train_generator():
+		print(data)
+		input()
 		
 	# process_data()

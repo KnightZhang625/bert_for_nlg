@@ -178,7 +178,7 @@ class Decoder(object):
           end_token = self.tgt_eos_id
           
           helper = tf.contrib.seq2seq.GreedyEmbeddingHelper(self.embedding_table, start_tokens, end_token)
-          my_decoder = tf.contrib.BasicDecoder(cells, helper, decoder_initial_state, output_layer=output_layer)
+          my_decoder = tf.contrib.seq2seq.BasicDecoder(cells, helper, decoder_initial_state, output_layer=output_layer)
 
           outputs, final_context_state, _ = tf.contrib.seq2seq.dynamic_decode(my_decoder,
                                                                               maximum_iterations=maximum_iterations,
