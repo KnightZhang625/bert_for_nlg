@@ -21,18 +21,6 @@ train_steps = cg.train_steps
 sos_id = cg.DecoderConfig.sos_id
 eos_id = cg.DecoderConfig.eos_id
 
-# # abandon generator
-# def train_generator(path):
-#   """this could achieve random by dataset.shuffle(10).batch(2).repeat(3)."""
-#   with codecs.open(path, 'r', 'utf-8') as file:
-#     for line in file:
-#       if len(line) != 0:
-#         line = [i for i in line][:-1]
-#         line = np.array(list(map(int, line)))
-				
-#         features = {'input': line}
-#         yield features
-
 # load the vocab dictionary
 def load_vocab():
 	global vocab_idx
@@ -241,12 +229,12 @@ def server_input_fn():
 	return tf.estimator.export.ServingInputReceiver(features, receive_tensors)
 
 if __name__ == '__main__':
-	for data in train_input_fn():
-	  print(data)
+	# for data in train_input_fn():
+	#   print(data)
 	  # input()
 	
 	# for data in train_generator():
 	# 	print(data)
 	# 	input()
 	
-	# make_process_data()
+	make_process_data()

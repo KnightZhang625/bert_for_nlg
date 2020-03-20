@@ -139,4 +139,4 @@ if __name__ == '__main__':
   if mode == 'train':
     main()
   elif mode == 'pacakge':
-    pakage_model('models/', 'pb_models/')
+    package_model(cg.save_model_path, cg.pb_model_path)
