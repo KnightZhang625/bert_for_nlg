@@ -122,4 +122,4 @@ if __name__ == '__main__':
   print(reply, ppl)
 
   # predict batch
-  predict_batch(model, MAIN_PATH / 'data/test_data.txt')
+  predict_batch(model, MAIN_PATH / 'data/test_infer_data.txt')

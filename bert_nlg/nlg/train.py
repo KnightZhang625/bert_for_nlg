@@ -138,5 +138,5 @@ if __name__ == '__main__':
   mode = args.mode
   if mode == 'train':
     main()
-  elif mode == 'pacakge':
+  elif mode == 'package':
     package_model(cg.save_model_path, cg.pb_model_path)
