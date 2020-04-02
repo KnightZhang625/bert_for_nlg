@@ -357,3 +357,37 @@ def create_cell_list_for_RNN(unit_type,
     cell_list.append(cell)
   
   return cell_list[0] if len(cell_list) == 1 else tf.contrib.rnn.MultiRNNCell(cell_list)
+
+"""VAE"""
+def vae(state, num_units, scope='vae'):
+    """VAE implementation, Hard Coding.
+    
+    The formula to calculate the vae loss:
+      vae_loss = (-0.5 * tf.reduce_sum(1.0 + vae_vb - tf.square(vae_mean) - tf.exp(vae_vb)) / batch_size) * 0.001  
+    """
+    # states = [state[0], state[1], state[2], state[3]]
+    states = [state[0], state[1]]
+    states = tf.transpose(state, [1, 0, 2])
+    shape = get_shape_list(states)
+
+    with tf.variable_scope(scope):
+        vae_mean = tf.layers.dense(states,
+                                        num_units,
+                                        activation=tf.nn.tanh,
+                                        name='vae_mean',
+                                        kernel_initializer=create_initializer())
+
+        vae_vb = tf.layers.dense(states,
+                                      num_units,
+                                      activation=tf.nn.tanh,
+                                      name='vae_vb',
+                                      kernel_initializer=create_initializer())
+        
+        eps = tf.random_normal([shape[0], shape[1], num_units], 0.0, 1.0, dtype=tf.float32)
+
+        z = vae_mean + tf.sqrt(tf.exp(vae_vb)) * eps
+    
+    states_list = []
+    for i in range(_cg.nmt_config.num_layers):
+        states_list.append(z[:, i, :])
+    return tuple(states_list), vae_mean, vae_vb
